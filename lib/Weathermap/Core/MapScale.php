@@ -116,24 +116,20 @@ class MapScale extends MapItem
 
     public function setColour($name, $colour)
     {
-        assert(isset($this->owner));
+        $valid = array(
+            'KEYTEXT' => 'keytextcolour',
+            'KEYBG' => 'keybgcolour',
+            'KEYOUTLINE' => 'keyoutlinecolour',
+            'SCALEMISS' => 'scalemisscolour'
+        );
 
-        switch (strtoupper($name)) {
-            case 'KEYTEXT':
-                $this->keytextcolour = $colour;
-                break;
-            case 'KEYBG':
-                $this->keybgcolour = $colour;
-                break;
-            case 'KEYOUTLINE':
-                $this->keyoutlinecolour = $colour;
-                break;
-            case 'SCALEMISS':
-                $this->scalemisscolour = $colour;
-                break;
-            default:
-                MapUtility::warn('Unexpected colour name in WeatherMapScale->SetColour');
-                break;
+        $k = strtoupper($name);
+
+        if (array_key_exists($k, $valid)) {
+            $prop = $valid[$k];
+            $this->$prop = $colour;
+        } else {
+            MapUtility::warn('Unexpected colour name in WeatherMapScale->SetColour');
         }
     }
 
@@ -821,21 +817,14 @@ class MapScale extends MapItem
 
     private function scaleEntrySort($left, $right)
     {
-        if ($left['bottom'] == $right['bottom']) {
-            if ($left['top'] < $right['top']) {
-                return -1;
-            }
-            if ($left['top'] > $right['top']) {
-                return 1;
-            }
-            return 0;
+        $lower = $left['bottom'] - $right['bottom'];
+        $upper = $left['top'] - $right['top'];
+
+        if ($lower==0) {
+            return $upper;
         }
 
-        if ($left['bottom'] < $right['bottom']) {
-            return -1;
-        }
-
-        return 1;
+        return $lower;
     }
 
     /**
