@@ -186,9 +186,26 @@ class MapScale extends MapItem
         return array($col, $key, $tag);
     }
 
+    protected function deriveColour($value, $scaleEntry)
+    {
+        if (is_null($scaleEntry['c2']) or $scaleEntry['c1']->equals($scaleEntry['c2'])) {
+            $candidate = $scaleEntry['c1'];
+        } else {
+            if ($scaleEntry['bottom'] == $scaleEntry['top']) {
+                $ratio = 0;
+            } else {
+                $ratio = ($value - $scaleEntry['bottom'])
+                    / ($scaleEntry['top'] - $scaleEntry['bottom']);
+            }
+            $candidate = $scaleEntry['c1']->blendWith($scaleEntry['c2'], $ratio);
+        }
+
+        return $candidate;
+    }
+
     protected function findScaleHit($value)
     {
-        $colour = new Colour(0, 0, 0);
+        $colour = null;
         $tag = '';
         $matchSize = null;
         $matchKey = null;
@@ -200,19 +217,7 @@ class MapScale extends MapItem
 
                 $range = $scaleEntry['top'] - $scaleEntry['bottom'];
 
-                $candidate = null;
-
-                if (is_null($scaleEntry['c2']) or $scaleEntry['c1']->equals($scaleEntry['c2'])) {
-                    $candidate = $scaleEntry['c1'];
-                } else {
-                    if ($scaleEntry['bottom'] == $scaleEntry['top']) {
-                        $ratio = 0;
-                    } else {
-                        $ratio = ($value - $scaleEntry['bottom'])
-                            / ($scaleEntry['top'] - $scaleEntry['bottom']);
-                    }
-                    $candidate = $scaleEntry['c1']->blendWith($scaleEntry['c2'], $ratio);
-                }
+                $candidate = $this->deriveColour($value, $scaleEntry);
 
                 // change in behaviour - with multiple matching ranges for a value, the smallest range wins
                 if (is_null($matchSize) || ($range < $matchSize)) {
@@ -221,17 +226,11 @@ class MapScale extends MapItem
                     $matchSize = $range;
                     $matchKey = $key;
 
-                    if (isset($scaleEntry['tag'])) {
-                        $tag = $scaleEntry['tag'];
-                    }
+                    $tag = $scaleEntry['tag'];
                 } else {
                     MapUtility::debug("But bigger than existing match\n");
                 }
             }
-        }
-
-        if (null === $candidate) {
-            return array(null, null, null);
         }
 
         return array($colour, $matchKey, $tag);
